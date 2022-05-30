@@ -23,6 +23,7 @@ export interface HereOptions extends GeocoderOptions {
   reverseGeocodeProxRadius?: any;
   apiKey: string;
   maxResults: number;
+  lang: string;
 }
 
 /**
@@ -34,7 +35,8 @@ export class HERE implements IGeocoder {
     app_id: '',
     app_code: '',
     apiKey: '',
-    maxResults: 5
+    maxResults: 5,
+    lang: 'en'
   };
 
   constructor(options?: Partial<HereOptions>) {
@@ -105,7 +107,8 @@ export class HEREv2 implements IGeocoder {
     apiKey: '',
     app_id: '',
     app_code: '',
-    maxResults: 10
+    maxResults: 10,
+    lang: 'en'
   };
 
   constructor(options?: Partial<HereOptions>) {
@@ -116,24 +119,34 @@ export class HEREv2 implements IGeocoder {
     const params = geocodingParams(this.options, {
       q: query,
       apiKey: this.options.apiKey,
-      limit: this.options.maxResults
+      limit: this.options.maxResults,
+      lang: this.options.lang
     });
 
-    if (!params.at && !params.in) {
-      throw Error(
-        'at / in parameters not found. Please define coordinates (at=latitude,longitude) or other (in) in your geocodingQueryParams.'
-      );
-    }
+    // if (!params.at && !params.in) {
+    //   throw Error(
+    //     'at / in parameters not found. Please define coordinates (at=latitude,longitude) or other (in) in your geocodingQueryParams.'
+    //   );
+    // }
 
-    this.getJSON(this.options.serviceUrl + '/discover', params, cb, context);
+    this.getJSON(this.options.serviceUrl + '/geocode', params, cb, context);
   }
 
   reverse(location: L.LatLngLiteral, scale: number, cb: GeocodingCallback, context?: any): void {
+    const loc = location.lat + ',' + location.lng;
+
     const params = reverseParams(this.options, {
-      at: location.lat + ',' + location.lng,
-      limit: this.options.reverseGeocodeProxRadius,
-      apiKey: this.options.apiKey
+      limit: this.options.maxResults,
+      apiKey: this.options.apiKey,
+      lang: this.options.lang
     });
+
+    if (this.options.reverseGeocodeProxRadius) {
+      params['in'] = 'circle:' + loc + ';r=' + this.options.reverseGeocodeProxRadius;
+    } else {
+      params['at'] = loc;
+    }
+
     this.getJSON(this.options.serviceUrl + '/revgeocode', params, cb, context);
   }
 
